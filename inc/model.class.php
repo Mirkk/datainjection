@@ -225,9 +225,19 @@ class PluginDatainjectionModel extends CommonDBTM
    function getPortUnicity() {
 
       return $this->fields["port_unicity"];
+   }   
+   
+   #MOMI 08/2022 CRON
+   function getCSVFilename() {
+	  #remove all "../" to avoid excaping from the standard directory  
+      return trim(str_replace("../","",$this->fields["csvfilename"]));
    }
-
-
+   
+   function getEnableScheduledInjection() {
+      return $this->fields["enable_scheduled_injection"];
+   }
+   #END
+   
    function getNumberOfMappings() {
 
       if ($this->mappings) {
@@ -493,6 +503,8 @@ class PluginDatainjectionModel extends CommonDBTM
          'name'          => __('Child entities'),
          'datatype'      => 'bool',
       ];
+	  
+      $tab = array_merge ( $tab, PluginDatainjectionCron::rawSearchOptionsToAdd ($this) );
 
       return $tab;
    }
@@ -720,8 +732,13 @@ class PluginDatainjectionModel extends CommonDBTM
       if ($ID > 0) {
          $tmp = self::getInstance('csv');
          $tmp->showAdditionnalForm($this);
-      }
-
+      
+	      #MOMI 08/2022 CRON
+		   $tmp = new PluginDatainjectionCron();
+		   $tmp->showAdditionnalForm($this);
+		   #END
+	  }
+	  
       $this->showFormButtons($options);
       return true;
    }
@@ -961,8 +978,12 @@ class PluginDatainjectionModel extends CommonDBTM
       //Get model & model specific fields
       $this->loadSpecificModel();
 
-      if (!$webservice) {
-         //Get and store uploaded file
+      // WP - load local file by cron
+      // START
+      // if (!$webservice) {
+      if (!$webservice && !$unique_filename) {
+      // END
+	  //Get and store uploaded file
          $original_filename           = $_FILES['filename']['name'];
          $temporary_uploaded_filename = $_FILES["filename"]["tmp_name"];
          $unique_filename             = tempnam(realpath(PLUGIN_DATAINJECTION_UPLOAD_DIR), "PWS");
@@ -1580,5 +1601,5 @@ class PluginDatainjectionModel extends CommonDBTM
 
       $this->injectionData = [];
    }
-
+   
 }

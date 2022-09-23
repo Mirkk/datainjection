@@ -30,27 +30,27 @@
 
 function plugin_datainjection_registerMethods() {
 
-   global $WEBSERVICES_METHOD;
+	global $WEBSERVICES_METHOD;
 
-   $methods = ['getModel'      => 'methodGetModel',
-               'listModels'    => 'methodListModels',
-               'inject'        => 'methodInject',
-               'listItemtypes' => 'methodListItemtypes'];
+	$methods = ['getModel'      => 'methodGetModel',
+			   'listModels'    => 'methodListModels',
+			   'inject'        => 'methodInject',
+			   'listItemtypes' => 'methodListItemtypes'];
 
-   foreach ($methods as $code => $method) {
-      $WEBSERVICES_METHOD['datainjection.'.$code] = ['PluginDatainjectionWebservice', $method];
-   }
+	foreach ($methods as $code => $method) {
+	  $WEBSERVICES_METHOD['datainjection.'.$code] = ['PluginDatainjectionWebservice', $method];
+	}
 }
 
 
 function plugin_datainjection_install() {
-   global $DB;
+	global $DB;
 
-   include_once Plugin::getPhpDir('datainjection')."/inc/profile.class.php";
+	include_once Plugin::getPhpDir('datainjection')."/inc/profile.class.php";
 
-   $migration = new Migration(null);
+	$migration = new Migration(null);
 
-   switch (plugin_datainjection_needUpdateOrInstall()) {
+	switch (plugin_datainjection_needUpdateOrInstall()) {
       case -1 :
          // Migrations from version 2.2.0+
          plugin_datainjection_update220_230();
@@ -187,14 +187,44 @@ function plugin_datainjection_install() {
 
       default :
          break;
-   }
+    }
+   
+   
+	// WP - Register crontasks DataInjection and DataInjectionAdditional - both disabled.
+	// START
+	// CronTask registers your plugin by the class name and
+	// the 2nd parameter as a static method with ‘cron’ prepended to it.
+	// The 3rd parameter is how often the job should run in seconds.
+	// The final parameter is an array of options where:
+	// 'comment' => 'File injection Model;/full/path.csv;0|1|2'  where the third param is the list of mandatory fields != '' && != NULL strrting from 0 index
 
-   return true;
+	$cron = new CronTask ();
+
+	if (! $cron->getFromDBbyName ( 'PluginDatainjectionCron', 'DataInjection' )) {
+		CronTask::Register ( 'PluginDatainjectionCron', 'DataInjection', DAY_TIMESTAMP, // 86400 sec
+		[ // 'allowmode', 'comment', 'hourmax', 'hourmin', 'logs_lifetime', 'mode', 'param', 'state'
+				'state' => CronTask::STATE_DISABLE,
+				'comment' => 'File injection from CSV with defined models',
+				'mode' => CronTask::MODE_EXTERNAL,
+				'hourmin' => '3',
+				'hourmax' => '8'
+		] );
+	}
+
+	// CronTask::Register('PluginDatainjectionCron', 'DataInjectionAdditional', 86400, array('hourmin' => 0, 'hourmax' => 24, 'mode' => CronTask::MODE_EXTERNAL,
+																								// 'state'   => CronTask::STATE_DISABLE,
+																								// 'comment' => 'File injection Model;/full/path.csv' ));
+	// END
+
+	return true;
 }
 
 
 function plugin_datainjection_uninstall() {
    global $DB;
+
+#MOMI TEST
+return true;
 
    $tables = ["glpi_plugin_datainjection_models",
               "glpi_plugin_datainjection_modelcsvs",
@@ -214,6 +244,11 @@ function plugin_datainjection_uninstall() {
    }
 
    plugin_init_datainjection();
+   
+   //WP
+   CronTask::Unregister('PluginDatainjectionCron');
+   //END
+   
    return true;
 }
 
