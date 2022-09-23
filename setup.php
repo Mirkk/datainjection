@@ -211,6 +211,11 @@ function getTypesToInject() {
                         'PluginDatainjectionDeviceDriveInjection'                 => 'datainjection',
                         'PluginDatainjectionDeviceNetworkCardInjection'           => 'datainjection',
                         'PluginDatainjectionApplianceInjection'                   => 'datainjection',
+						      // WP MOMI computer disk (volumes) added
+                        'PluginDatainjectionItem_DiskInjection'                   => 'datainjection',
+						      // WP MOMI computervirtualmachine  added
+						      'PluginDatainjectionComputerVirtualMachineInjection'	  => 'datainjection',
+                        // END
                         'PluginDatainjectionCertificateInjection'                 => 'datainjection'
    ];
    //Add plugins
