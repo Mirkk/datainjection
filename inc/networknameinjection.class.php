@@ -118,13 +118,20 @@ class PluginDatainjectionNetworkNameInjection extends NetworkName
                 'name'     => $values['NetworkName']['ipaddresses_id'],
              ]
          )) {
-
-            $ip                  = new IPAddress();
+			 
+			##MOMI 08/2022 https://github.com/pluginsGLPI/datainjection/pull/304
+            $ip                  = new IPAddress($values['NetworkName']['ipaddresses_id']);
             $tmp['items_id']     = $values['NetworkName']['id'];
             $tmp['itemtype']     = "NetworkName";
-            $tmp['name']         = $values['NetworkName']['ipaddresses_id'];
+            #MOMI $tmp['name']         = $values['NetworkName']['ipaddresses_id'];
+            $tmp['name']         = $ip->getTextual(); #to bring the IP to standard format
             $tmp['is_dynamic']   = 0;
-            $ip->add($tmp);
+			##MOMI 08/2022 https://github.com/pluginsGLPI/datainjection/pull/304
+            #$ip->add($tmp);
+			if (!$ip->getFromDBByCrit($tmp)) {
+               $ip->add($tmp);
+            }
+			# END
          }
       }
    }

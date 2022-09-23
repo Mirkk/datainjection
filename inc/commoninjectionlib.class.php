@@ -845,6 +845,7 @@ class PluginDatainjectionCommonInjectionLib
     * @param fromdb boolean
    **/
    private function setValueForItemtype($itemtype, $field, $value, $fromdb = false) {
+	  //error_log  ("[MOMI DEBUG] setValueForItemtype: ". $itemtype."  ". $field."  ". $value."=!=");
 
       // TODO awfull hack, text ftom CSV set more than once, so check if "another" value
       if (isset($this->values[$itemtype][$field]) && $this->values[$itemtype][$field]!=$value) {
@@ -1464,6 +1465,15 @@ class PluginDatainjectionCommonInjectionLib
                //$this->results['status'] = self::SUCCESS;
                $this->results[get_class($item)] = $newID;
 
+				##MOMI 08/2022 https://github.com/pluginsGLPI/datainjection/pull/303
+               //change order of items if needed
+               if(isset($this->values['NetworkPort']) && isset($this->values['NetworkName'])){
+                  $np = $this->values['NetworkPort'];
+                  unset($this->values['NetworkPort']);
+                  $this->values = array('NetworkPort' => $np) + $this->values;
+               }
+			   ## END MOMI
+
                //Process other types
                foreach ($this->values as $itemtype => $data) {
                   //Do not process primary_type
@@ -1474,13 +1484,13 @@ class PluginDatainjectionCommonInjectionLib
 
                      $this->addNeededFields($injectionClass, $itemtype);
                      $this->dataAlreadyInDB($injectionClass, $itemtype);
-
+					 
                      if ($this->getValueByItemtypeAndName($itemtype, 'id') == self::ITEM_NOT_FOUND) {
                         $add = true;
                         $this->unsetValue($itemtype, 'id');
                      } else {
                         $add = false;
-                     }
+                     }					 
                      $values = $this->getValuesForItemtype($itemtype);
                      if ($this->lastCheckBeforeProcess($injectionClass, $values)) {
                         $tmpID  = $this->effectiveAddOrUpdate($injectionClass, $item, $values, $add);
@@ -1510,42 +1520,24 @@ class PluginDatainjectionCommonInjectionLib
       //Insert data using the standard add() method
       $toinject = [];
       $options  = $injectionClass->getOptions();
-
+	  // MOMI 09/2022 https://github.com/pluginsGLPI/datainjection/pull/306/
       foreach ($values as $key => $value) {
          $option = self::findSearchOption($options, $key);
-         if ($option !== false && (!isset($option['checktype']) || $option['checktype'] != self::FIELD_VIRTUAL)) {
-            //If field is a dropdown and value is '', then replace it by 0
-            if (self::isFieldADropdown($option['displaytype']) && $value == self::EMPTY_VALUE) {
-               $toinject[$key] = self::DROPDOWN_EMPTY_VALUE;
-            } else {
-               $toinject[$key] = $value;
-            }
-         }
 
-         if ($key === 'entities_id') {
-            $toinject[$key] = $value;
+         if ($option !== false && isset($option['checktype']) && $option['checktype'] == self::FIELD_VIRTUAL) {
+             break;
          }
-
-         //useful for fields
-         if (strpos(get_class($item), 'PluginFields') !== false &&
-           ($key === 'items_id' || $key === 'itemtype')) {
-            $toinject[$key] = $value;
-         }
-
-         //useful for Infocom
-         if (get_class($item) == Infocom::getType() &&
-         ($key === 'items_id' || $key === 'itemtype')) {
-            $toinject[$key] = $value;
-         }
-
-         //keep id in case of update
-         if (!$add && $key === 'id') {
-            $toinject[$key] = $value;
-         }
+         if ($option !== false && self::isFieldADropdown($option['displaytype']) && $value == self::EMPTY_VALUE) {
+             //If field is a dropdown and value is '', then replace it by 0
+             $toinject[$key] = self::DROPDOWN_EMPTY_VALUE;
+         } else {
+             $toinject[$key] = $value;
+		 }
       }
 
       $toinject = Toolbox::addslashes_deep($toinject);
 
+      $newID = null;
       if (method_exists($injectionClass, 'customimport')) {
          $newID = call_user_func(
              [$injectionClass, 'customimport'], $toinject, $add,
@@ -1815,8 +1807,8 @@ class PluginDatainjectionCommonInjectionLib
                }
                $sql .= " WHERE 1 " . $where_entity . " " . $where;
             }
-
             $result = $DB->query($sql);
+			
             if ($DB->numrows($result) > 0) {
                $db_fields = $DB->fetchAssoc($result);
                foreach ($db_fields as $key => $value) {
@@ -1827,6 +1819,7 @@ class PluginDatainjectionCommonInjectionLib
             } else {
                $this->setValueForItemtype($itemtype, 'id', self::ITEM_NOT_FOUND);
             }
+			//error_log  ("[MOMI DEBUG] 3 in AoU: ". print_r($this->values, true)."=!=");
          }
       }
    }
