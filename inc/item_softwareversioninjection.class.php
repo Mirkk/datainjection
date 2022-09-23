@@ -140,5 +140,37 @@ class PluginDatainjectionItem_SoftwareVersionInjection extends Item_SoftwareVers
 
       return $fields;
    }
+   
+   function processAfterInsertOrUpdate($values, $add=true, $rights=array()) {
+
+		#error_log("FUNCTION EXECUTED in ".get_parent_class($this).":". print_r($values, true));  
+		
+		$class   = get_parent_class($this);
+        $item    = new $class();
+		
+		$where   = [
+			'softwareversions_id'=> $values[$class]['softwareversions_id'],
+			'itemtype' => $values[$class]['itemtype'],
+			'items_id' => $values[$class]['items_id'],
+			# I don't search for softwareversions_id, this should be single entry and updated
+		];
+		 
+		$tmp = $values[$class]; 
+		unset($tmp['id']);
+		
+		if (!countElementsInTable($item->getTable(), $where)) {
+			$item->add($tmp);
+		} else {
+			$datas = getAllDataFromTable($item->getTable(), $where);
+			foreach ($datas as $data) {
+			   //update only first item
+			   if (isset($tmp['id'])) {
+				 continue;  
+			   }
+			   $tmp['id'] = $data['id'];
+			   $item->update($tmp);
+			}
+		}
+   }
 
 }

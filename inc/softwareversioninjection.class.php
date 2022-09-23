@@ -193,4 +193,34 @@ class PluginDatainjectionSoftwareVersionInjection extends SoftwareVersion
       return "";
    }
 
+  function processAfterInsertOrUpdate($values, $add=true, $rights=array()) {
+
+	  #error_log("FUNCTION ".get_parent_class($this)." EXECUTED:".print_r($values, true));  
+
+      if (isset($values['Software']['id'])) {
+		$class   = get_parent_class($this);  //"SoftwareVersion"
+		$item    = new $class();
+		 
+		$where   = [
+			'name'     		=> $values[$class]['name'],
+			'softwares_id' 	=> $values[$class]['items_id'],
+		];
+		 
+		$tmp = $values[$class];
+		unset($tmp['id']);		 
+		 
+		if (!countElementsInTable($item->getTable(), $where)) {
+			$item->add($tmp);
+		} else {
+			$datas = getAllDataFromTable($item->getTable(), $where);
+			foreach ($datas as $data) {
+			   $tmp['id'] = $data['id'];
+			   $item->update($tmp);
+			   // update only first item (nevertheless there should never be more than one)
+			   break;
+			}
+		}
+      }
+   }
+
 }
