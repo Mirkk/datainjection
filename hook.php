@@ -83,6 +83,8 @@ function plugin_datainjection_install() {
                      `float_format` tinyint( 1 ) NOT NULL DEFAULT '0',
                      `port_unicity` tinyint( 1 ) NOT NULL DEFAULT '0',
                      `step` int( 11 ) NOT NULL DEFAULT '0',
+                     `csvfilename` VARCHAR(255) NOT NULL DEFAULT '',
+                     `enable_scheduled_injection` tinyint(1) NOT NULL DEFAULT 0,
                      PRIMARY KEY  (`id`)
                    ) ENGINE=InnoDB CHARSET=utf8 COLLATE=utf8_unicode_ci";
           $DB->queryOrDie($query, $DB->error());
