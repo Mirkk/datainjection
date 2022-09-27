@@ -126,6 +126,30 @@ class PluginDatainjectionComputerVirtualMachineInjection extends ComputerVirtual
       return PluginDatainjectionCommonInjectionLib::addToSearchOptions($tab, $options, $this);
    }
 
+   /**
+    * @param $primary_type
+    * @param $values
+   **/
+   function addSpecificNeededFields($primary_type, $values) {
+
+      $fields = [];
+      if ($primary_type == 'Computer') {
+         $fields['computers_id'] = $values[$primary_type]['id'];
+      }
+      return $fields;
+   }
+
+   /**
+    * @param $fields_toinject    array
+    * @param $options            array
+    **/
+   function checkPresent($fields_toinject = [], $options = []) {
+      if ($options['itemtype'] != 'ComputerVirtualMachine') {
+         return (" AND `computers_id` = '" . $fields_toinject['Computer']['id'] . "'
+                AND `name` = '" . $fields_toinject['ComputerVirtualMachine']['name'] . "'");
+      }
+      return "";
+   }
 
    /**
     * @param $values
@@ -133,49 +157,46 @@ class PluginDatainjectionComputerVirtualMachineInjection extends ComputerVirtual
     * @param $rights    array
    **/
    
-   function processAfterInsertOrUpdate($values, $add=true, $rights=array()) {
-	  #error_log("FUNCTION EXECUTED in ".get_parent_class($this).":". print_r($values, true)); 
+/*    function processAfterInsertOrUpdate($values, $add=true, $rights=array()) {
+      error_log("FUNCTION EXECUTED in ".get_parent_class($this).":". print_r($values, true)); 
 
       if (isset($values['Computer']['id'])) {
-		 $class   = get_parent_class($this);
+         $class   = get_parent_class($this);
          $item    = new $class();
 
-		 $where   = [
-    	    'name'     => $values[$class]['name'],
-			'computers_id' => $values['Computer']['id'], #$values[$class]['computers_id'], 
+         $where   = [
+            'name'     => $values[$class]['name'],
+            'computers_id' => $values['Computer']['id'], #$values[$class]['computers_id'], 
          ];
 
-		 $tmp = $values[$class]; 
-		 
-	     $tmp['computers_id'] 	= $values['Computer']['id'];    
-	     $tmp['computers_id'] 	= $values['Computer']['id'];    
-		 
-         unset($tmp['id']);		
-		 
+         $tmp = $values[$class];
+         $tmp['computers_id']    = $values['Computer']['id'];
+         unset($tmp['id']);
+
          #$tmp['uuid'] = $values[$class]['uuid'];
 
          if (!countElementsInTable($item->getTable(), $where)) {
             $item->add($tmp);
          } else {
-			$datas = getAllDataFromTable($item->getTable(), $where);
-			
+            $datas = getAllDataFromTable($item->getTable(), $where);
+
             foreach ($datas as $data) {
                //update only first item
                if (isset($tmp['id'])) {
-                 continue;  
+                  continue;
                }
                $tmp['id'] = $data['id'];
                $item->update($tmp);
             }
          }
       }
-   }
+   } */
 
    /**
     * @see plugins/datainjection/inc/PluginDatainjectionInjectionInterface::addOrUpdateObject()
    **/
    function addOrUpdateObject($values = [], $options = []) {
-	  //error_log("THIS IS NEVER EXECUTED BECAUSE A COMPUTER IS ADDED, NOT A DISK!!"  );
+	   //error_log("THIS IS NEVER EXECUTED BECAUSE A COMPUTER IS ADDED, NOT A VM!!"  );
 
       $lib = new PluginDatainjectionCommonInjectionLib($this, $values, $options);	    
       $lib->processAddOrUpdate(); 
