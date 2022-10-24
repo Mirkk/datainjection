@@ -107,15 +107,21 @@ class PluginDatainjectionCron extends CronTask {
     // }
 
 	// New job: searches in all models for an enabled scheduling and the filename saved there.
+	// Models need to be public or by root user!
 	static function cronDataInjection ($task = NULL) {
 		global $DB;
 		
 		// To prevent problem of execution time during injection
 		ini_set("max_execution_time", "0");
-
-		$models = PluginDatainjectionModel::getModels(1); // 1 = user root
+		
+		#$models = PluginDatainjectionModel::getModels(1, "name", 1, false); // 1 = user root
+		$query = "SELECT `id`, `name`, `is_private`, `entities_id`, `is_recursive`, `itemtype`,`step`, `comment`
+                FROM `glpi_plugin_datainjection_models` WHERE `step` = '".PluginDatainjectionModel::READY_TO_USE_STEP."' AND (";
+		$query .= "(`is_private` = '" . PluginDatainjectionModel::MODEL_PUBLIC."') OR (`users_id` = 1)) ORDER BY `name` DESC";
+		$models = $DB->request($query);
 		
 		if (count($models) == 0) {
+			$task->log("No valid public or root models found!");
 			error_log('[DEBUG] no valid models found.');
 			return 0;
 		}
@@ -128,11 +134,13 @@ class PluginDatainjectionCron extends CronTask {
 			##$model->can($modelid, READ);
 			$model->getFromDB($singlemodel['id']);
 			if (!$model->getEnableScheduledInjection() || empty($model->getCSVFilename())){
+				# $task->log("Not to schedule....!");
 				continue;
 			} 
 			$filename  = self::GLPI_FILEINJECT_DIR ."/". $model->getCSVFilename();
 			$modelname = $singlemodel['name'];		
-		
+		    
+			$task->log("Executing scheduled model $modelname on file $filename.");
 			if (!file_exists($filename)) {
 			   $task->log("[WARNING] File $filename, defined in $modelname, does not exist. Disable scheduled injection!");
 			   error_log ("[WARNING] File $filename, defined in $modelname, does not exist. Disable scheduled injection!");
